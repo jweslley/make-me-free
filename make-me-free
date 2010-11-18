@@ -224,19 +224,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # some code
 
 usage() {
-  if [ -z "$2" ]; then
+  if [ -z "$1" ]; then
    cat <<USAGE
-Usage: $1 [OPTION]... LICENSE_NAME_PATTERN
-Try '$1 -h' for more information.
+Usage: $self [OPTION]... LICENSE_NAME_PATTERN
+Try '$self -h' for more information.
 USAGE
   else
    cat <<HELP
-Usage: $1 [OPTION]... LICENSE_NAME_PATTERN
+Usage: $self [OPTION]... LICENSE_NAME_PATTERN
 
 Description:
 
 Example:
-  $1 mit
+  $self mit
 
 Options:
   -y YEAR
@@ -244,7 +244,7 @@ Options:
   -o ORGANIZATION
   -p PROGRAM
   -f output file (defaults to stdout)
-  -l
+  -l show all available licenses
   -h display this help and exit
   -v output version information and exit
 HELP
@@ -261,19 +261,30 @@ show_licenses() {
 }
 
 licenses() {
-  sed -n 's/^LICENSE_\(.*\)=.*/\1/p' $0
+  sed -n 's/^LICENSE_\(.*\)=.*/\1/p' "$0"
 }
 
 license() {
-  sed -n "/^LICENSE_$1/,/'/p" $0 | sed '1d;$d'
+  sed -n "/^LICENSE_$1/,/'/p" "$0" | sed '1d;$d'
 }
 
-generate() {
+replace_variables() {
   license $1 |
     sed "s/LICENSE_YEAR/$year/" |
     sed "s/LICENSE_COPYRIGHT_OWNER/$copyright_owner/" |
     sed "s/LICENSE_ORGANIZATION/$organization/" |
     sed "s/LICENSE_PROGRAM/$program/"
+}
+
+generate() {
+  license="$1"
+  output_filename="$2"
+  if [ -z "$output_filename" ] ; then
+    replace_variables $license
+  else
+    replace_variables $license > "$output_filename"
+    echo "$output_filename generated under $license"
+  fi
 }
 
 # defaults
@@ -293,20 +304,18 @@ while getopts "y:c:o:p:f:lhv" name; do
     f) output_filename=$OPTARG;shift;shift;;
     l) show_licenses;;
     v) show_version;;
-    h) usage $self SHOW_OPTIONS;;
-    *) usage $self;;
+    h) usage SHOW_OPTIONS;;
+    *) usage;;
   esac
 done
 
-license_name=$(test -z $1 && $LICENSE || echo $1)
-test -z $license_name && echo "$self: you must specify the license name" && usage $self && exit 2
+license_name=$(test -z "$1" && echo "$LICENSE" || echo "$1")
+test -z "$license_name" && echo "$self: you must specify the license name" && usage && exit 2
 
-license=$(licenses | grep -i $license_name | head -1)
-test -x $license && echo "license not found: $license_name" && exit 3
-
-if [ -z "$output_filename" ] ; then
-  generate $license
-else
-  generate $license > "$output_filename"
-  echo "$output_filename generated under $license"
-fi
+license=$(licenses | grep -i "$license_name")
+count=$(echo "$license" | wc -w)
+case "$count" in
+  0) echo "No license match the given pattern: $license_name" && exit 3;;
+  1) generate "$license" "$output_filename";;
+  *) echo "Be more specific. $count matches found:" && licenses | grep -i --color "$license_name" && exit 4;;
+esac
