@@ -1,5 +1,5 @@
 #!/bin/sh
-#  <one line to give the program's name and a brief idea of what it does.>
+#  Generate license files
 #  Copyright (C) 2010 Jonhnny Weslley <http://jonhnnyweslley.net>
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -234,6 +234,7 @@ USAGE
 Usage: $self [OPTION]... LICENSE_NAME_PATTERN
 
 Description:
+  Generate license files.
 
 Example:
   $self mit
@@ -289,9 +290,9 @@ generate() {
 
 # defaults
 year=$(date +'%Y')
-copyright_owner=$(test -z $COPYRIGHT_OWNER && whoami || echo $COPYRIGHT_OWNER)
-organization=$(test ! -z $ORGANIZATION && echo $ORGANIZATION)
-output_filename=$(test ! -z $LICENSE_FILENAME && echo $LICENSE_FILENAME)
+copyright_owner=$(test -z "$COPYRIGHT_OWNER" && whoami || echo "$COPYRIGHT_OWNER")
+organization=$(test ! -z "$ORGANIZATION" && echo "$ORGANIZATION")
+output_filename=$(test ! -z "$LICENSE_FILENAME" && echo "$LICENSE_FILENAME")
 program=""
 
 self=$(basename $0)
